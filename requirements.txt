@@ -1,0 +1,7 @@
+PyYAML==6.0
+rednotebook @ file:///opt/rednotebook
+ruamel.yaml==0.17.21
+ruamel.yaml.clib==0.2.6
+vext==0.7.6
+vext.gi==0.7.4
+

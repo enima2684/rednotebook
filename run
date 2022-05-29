@@ -8,6 +8,13 @@
 
 set -euo pipefail
 
+REDNOTEBOOK_APP_FOLDER=/opt/rednotebook
+REDNOTEBOOK_DATA_FOLDER=/home/amine/.rednotebook
+
+ENCRYPTED_DATA_FOLDER=/home/amine/NextCloud/Documents/Encrypted
+ENCRYPTED_DATA_FILENAME=.myDiary
+
+
 # Change into RedNotebook directory.
 if command -v realpath &> /dev/null; then
     # If realpath command exists, use it to follow symlinks.
@@ -16,5 +23,41 @@ else
     cd "$(dirname "$0")"
 fi
 
+# Pre execturion steps
+
+## return error if data folder exists
+if [ -d "$REDNOTEBOOK_DATA_FOLDER" ]; then
+  # Control will enter here if $DIRECTORY exists.
+  echo "ERROR: data folder already exists"
+  exit 1
+fi
+
+echo "copying the encrypted archive"
+cp $ENCRYPTED_DATA_FOLDER/$ENCRYPTED_DATA_FILENAME.7z.pgp /home/amine/.
+
+## decrypt the archive
+gpg -o /home/amine/$ENCRYPTED_DATA_FILENAME.7z -d /home/amine/$ENCRYPTED_DATA_FILENAME.7z.pgp && rm /home/amine/$ENCRYPTED_DATA_FILENAME.7z.pgp
+
+## unzip the archive
+7z x /home/amine/.myDiary.7z -o/home/amine -sdel
+
 # Run RedNotebook.
 python3 rednotebook/journal.py "$@"
+
+# Post execution steps
+
+## zip the archive
+echo "comprzssing dta folder ..."
+7z a /home/amine/$ENCRYPTED_DATA_FILENAME.7z $REDNOTEBOOK_DATA_FOLDER 
+
+# remove local data
+echo "removing local data folder ..."
+rm -rf $REDNOTEBOOK_DATA_FOLDER
+
+echo "encrypting the archive ..."
+gpg -o /home/amine/$ENCRYPTED_DATA_FILENAME.7z.pgp -r amine.bouamama@gmail.com -e /home/amine/$ENCRYPTED_DATA_FILENAME.7z && rm /home/amine/$ENCRYPTED_DATA_FILENAME.7z
+
+## move the archive to the cloud
+mv /home/amine/$ENCRYPTED_DATA_FILENAME.7z.pgp $ENCRYPTED_DATA_FOLDER/$ENCRYPTED_DATA_FILENAME.7z.pgp
+
+echo "archive created"
